@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-    dsn := "postgres://ian:postgres@localhost:5432/movie_api?sslmode=disable"
+    dsn := "postgres://user:password@localhost:5432/go_movie_v1?sslmode=disable"
     database, err := db.Connect(dsn)
     if err != nil {
         log.Fatal(err)

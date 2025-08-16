@@ -23,8 +23,14 @@ func (c *MovieController) GetAllMovies(w http.ResponseWriter, r *http.Request) {
         return
     }
     
+    response := models.MoviesResponse{
+        Status:  "success",
+        Message: "Movies retrieved successfully",
+        Data:    movies,
+    }
+    
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(movies)
+    json.NewEncoder(w).Encode(response)
 }
 
 func (c *MovieController) GetMovieById(w http.ResponseWriter, r *http.Request) {
@@ -41,8 +47,14 @@ func (c *MovieController) GetMovieById(w http.ResponseWriter, r *http.Request) {
         return
     }
     
+    response := models.MovieResponse{
+        Status:  "success",
+        Message: "Movie retrieved successfully",
+        Data:    *movie,
+    }
+    
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(movie)
+    json.NewEncoder(w).Encode(response)
 }
 
 func (c *MovieController) CreateMovie(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +69,72 @@ func (c *MovieController) CreateMovie(w http.ResponseWriter, r *http.Request) {
         return
     }
     
+    response := models.MovieResponse{
+        Status:  "success",
+        Message: "Movie created successfully",
+        Data:    movie,
+    }
+    
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(movie)
+    json.NewEncoder(w).Encode(response)
+}
+
+func (c *MovieController) UpdateMovieById(w http.ResponseWriter, r *http.Request) {
+    idStr := r.PathValue("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+    
+    var movie models.Movie
+    if err := json.NewDecoder(r.Body).Decode(&movie); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    
+    if err := c.repo.Update(id, &movie); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    
+    movie.ID = id
+    response := models.MovieResponse{
+        Status:  "success",
+        Message: "Movie updated successfully",
+        Data:    movie,
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
+}
+
+func (c *MovieController) DeleteMovieById(w http.ResponseWriter, r *http.Request) {
+    idStr := r.PathValue("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+    
+    movie, err := c.repo.GetByID(id)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusNotFound)
+        return
+    }
+    
+    if err := c.repo.Delete(id); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    
+    response := models.MovieResponse{
+        Status:  "success",
+        Message: "Movie deleted successfully",
+        Data:    *movie,
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }

@@ -1,8 +1,6 @@
 package repositories
 
-import (
-	"movie-api-v1/models"
-)
+import "movie-api-v1/models"
 
 type MovieRepository interface {
     GetAll() ([]models.Movie, error)
