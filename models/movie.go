@@ -1,9 +1,5 @@
 package models
 
-import "database/sql"
-
-type MovieController struct{ db *sql.DB }
-
 type Movie struct {
     ID          int      `json:"id"`
     Title       string   `json:"title"`

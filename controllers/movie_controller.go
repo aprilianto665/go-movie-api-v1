@@ -1,38 +1,63 @@
 package controllers
 
 import (
-	"database/sql"
-	"fmt"
+	"encoding/json"
 	"movie-api-v1/models"
+	"movie-api-v1/repositories"
 	"net/http"
+	"strconv"
 )
 
+type MovieController struct {
+    repo repositories.MovieRepository
+}
 
+func NewMovieController(repo repositories.MovieRepository) *MovieController {
+    return &MovieController{repo: repo}
+}
 
-func NewMovieController(db *sql.DB) *models.MovieController { return &models.MovieController{db: db} }
+func (c *MovieController) GetAllMovies(w http.ResponseWriter, r *http.Request) {
+    movies, err := c.repo.GetAll()
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(movies)
+}
 
-func (c *models.MovieController) GetAllMovies (writer http.ResponseWriter, request *http.Request){
-	rows, err := c.db.Query("SELECT * FROM movies")
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-} 
+func (c *MovieController) GetMovieById(w http.ResponseWriter, r *http.Request) {
+    idStr := r.PathValue("id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+    
+    movie, err := c.repo.GetByID(id)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusNotFound)
+        return
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(movie)
+}
 
-func (c *models.MovieController) GetMovieById (writer http.ResponseWriter, request *http.Request){
-	id := request.PathValue("id")
-	fmt.Fprintf(writer, "Get movie by ID %s", id)
-} 
-
-func UpdateMovieById (writer http.ResponseWriter, request *http.Request){
-	fmt.Fprint(writer, "Update movie by ID")
-} 
-
-func DeleteMovieById (writer http.ResponseWriter, request *http.Request){
-	fmt.Fprint(writer, "Delete movie by ID")
-} 
-
-func CreateMovie (writer http.ResponseWriter, request *http.Request){
-	fmt.Fprint(writer, "Create movie")
-} 
+func (c *MovieController) CreateMovie(w http.ResponseWriter, r *http.Request) {
+    var movie models.Movie
+    if err := json.NewDecoder(r.Body).Decode(&movie); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    
+    if err := c.repo.Create(&movie); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(movie)
+}
